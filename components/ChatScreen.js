@@ -1,5 +1,7 @@
-import Message from './Messages';
+import Message from './Message';
 import { useState } from 'react';
+import firebase from 'firebase';
+import TimeAgo from 'timeago-react';
 import { auth, db } from '../firebase';
 import styled from 'styled-components';
 import { useRouter } from 'next/router';
@@ -8,19 +10,26 @@ import MoreVertIcon from '@material-ui/icons/MoreVert';
 import { Avatar, IconButton } from '@material-ui/core';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import AttachFileIcon from '@material-ui/icons/AttachFile';
+import getRecipientEmail from '../utils/getRecipientEmail';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
 
 function ChatScreen({ chat, messages }) {
+   // console.log(chat, messages);
    const [input, setInput] = useState("");
    const [user] = useAuthState(auth);
    const router = useRouter();
    const [messagesSnapshot] = useCollection(
       db
-         .collection("chat")
+         .collection("chats")
          .doc(router.query.id)
          .collection("messages")
          .orderBy("timestamp", "asc")
+   );
+   const [recipientSnapshot] = useCollection(
+      db
+         .collection('users')
+         .where('email', '==', getRecipientEmail(chat.users, user ))
    );
 
    // This anonymous function is to get email when you put in prompt
@@ -32,29 +41,65 @@ function ChatScreen({ chat, messages }) {
                user={message.data().user}
                message={{ 
                   ...message.data(),
-                  timestamp: message.data().timestamp?.toDate().getTime(),
-                }}
+                  timestamp: message.data().timestamp?.toDate().getTime()
+               }}
             />
          ));
+      } else {
+         return JSON.parse(messages ?? "[]").map(message => (
+            <Message 
+               key={message.id} 
+               user={message.user} 
+               message={message} 
+            />
+         ))
       }
    };
 
    // This anonymous function is to send message.data()
-   const sendMessage = () => {
-      
-   }
+   const sendMessage = (e) => {
+      e.preventDefault();
+      // Upadate the last seen
+      db.collection("users").doc(user.uid).set(
+         {
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+         }, 
+            { merge: true }
+      );
 
+      db.collection("chats").doc(router.query.id).collection("messages").add({
+         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+         message: input,
+         user: user.email,
+         photoURL: user.photoURL,
+      });
 
+      setInput("");
+   };
 
+   const recipient = recipientSnapshot?.docs?.[0]?.data();
+   const recipientEmail = getRecipientEmail(chat.users, user)
 
    return (
       <Container>
          <Header>
-            <Avatar />
+            {recipient ? (
+               <Avatar src={recipient?.photoURL} />
+            ) : (
+               <Avatar>{recipientEmail[0]}</Avatar>
+            )}
 
             <HeaderInformation>
-               <h3>Rec Email</h3>
-               <p>Last seen ...</p>
+               <h3>{recipientEmail}</h3>
+               {recipientSnapshot ? (
+                  <p>Last Active: {' '}
+                  {recipient?.lastSeen?.toDate() ? (
+                     <TimeAgo datetime={recipient?.lastSeen?.toDate()} />
+                  ) : "Unvailable"}
+                  </p>
+               ) : (
+                  <p>Loading Last Active ...</p>
+               )}
             </HeaderInformation>
             <HeaderIcons>
                <IconButton>

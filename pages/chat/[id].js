@@ -10,6 +10,8 @@ import getRecipientEmail from '../../utils/getRecipientEmail';
 function Chat({ chat, messages }) {
 
   const [user] = useAuthState(auth);
+  // console.log(chat);
+  // console.log(messages);
 
   return (
     <Container>
@@ -38,9 +40,9 @@ export async function getServerSideProps(context) {
   const messages = messagesRes.docs.map((doc) => ({
     id: doc.id,
     ...doc.data()
-  })).map(messages => ({
+  })).map((messages) => ({
     ...messages,
-    timestamp: messages.timestamp.toData().getTime()
+    timestamp: messages.timestamp.toDate().getTime()
   }));
 
 //  PREP the chats
