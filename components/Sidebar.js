@@ -1,7 +1,6 @@
 import Chat from '../components/Chat';
 import { auth, db } from '../firebase';
 import styled from 'styled-components';
-import { useRouter } from 'next/router';
 import ChatIcon from '@material-ui/icons/Chat';
 import * as EmailValidator from 'email-validator';
 import SearchIcon from '@material-ui/icons/Search';
@@ -11,7 +10,6 @@ import { useCollection } from 'react-firebase-hooks/firestore';
 import { Avatar, Button ,IconButton } from '@material-ui/core';
 
 function Sidebar() {
-    const router = useRouter();
     const [user] = useAuthState(auth);
     const userChatRef = db.collection("chats").where("users", "array-contains", user.email); 
     const [chatsSnapshot] = useCollection(userChatRef);
@@ -71,7 +69,22 @@ function Sidebar() {
 
 export default Sidebar;
 
-const Container = styled.div``;
+const Container = styled.div`
+    flex: 0.45;
+    border-right: 1px solid whitesmoke;
+    height: 100vh;
+    min-width: 300px;
+    max-width: 350px;
+    overflow-y: scroll;
+    
+    ::-webkit-scrollbar {
+        display: none;
+    }
+
+    -ms-overflow-style: none; // IE and Edge
+    scrollbar-width: none; // Firefox
+
+`;
 
 const Search = styled.div`
     display: flex;
