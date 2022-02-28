@@ -1,10 +1,10 @@
 import Message from './Message';
-import { useState } from 'react';
 import firebase from 'firebase';
 import TimeAgo from 'timeago-react';
 import { auth, db } from '../firebase';
 import styled from 'styled-components';
 import { useRouter } from 'next/router';
+import { useState, useRef } from 'react';
 import MicIcon from '@material-ui/icons/Mic';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import { Avatar, IconButton } from '@material-ui/core';
@@ -16,9 +16,10 @@ import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
 
 function ChatScreen({ chat, messages }) {
    // console.log(chat, messages);
-   const [input, setInput] = useState("");
-   const [user] = useAuthState(auth);
    const router = useRouter();
+   const [user] = useAuthState(auth);
+   const endOfMessagesRef = useRef(null);
+   const [input, setInput] = useState("");
    const [messagesSnapshot] = useCollection(
       db
          .collection("chats")
@@ -56,6 +57,14 @@ function ChatScreen({ chat, messages }) {
       }
    };
 
+   // This anonymous function is to scroll to the bottom of the chat
+   const scrollToBottom = () => {
+      endOfMessagesRef.current.scrollIntoView({
+         behavior: "smooth",
+         block: "start"
+      });
+   }
+
    // This anonymous function is to send message.data()
    const sendMessage = (e) => {
       e.preventDefault();
@@ -75,6 +84,7 @@ function ChatScreen({ chat, messages }) {
       });
 
       setInput("");
+      scrollToBottom();
    };
 
    const recipient = recipientSnapshot?.docs?.[0]?.data();
@@ -114,7 +124,7 @@ function ChatScreen({ chat, messages }) {
          <MessageContainer>
             {/* Show Messages */}
             {showMessages()}
-            <EndOfMessage />
+            <EndOfMessage ref={endOfMessagesRef} />
          </MessageContainer>
 
          <InputContainer>
@@ -147,7 +157,7 @@ const Input = styled.input`
    align-items: center;
    padding: 20px;
    margin-left: 15px;
-   margin-right: 15px
+   margin-right: 15px;
 `;
 
 const InputContainer = styled.form`
@@ -187,7 +197,9 @@ const HeaderInformation = styled.div`
 
 const HeaderIcons = styled.div``;
 
-const EndOfMessage = styled.div``;
+const EndOfMessage = styled.div`
+   margin-bottom: 50px;
+`;
 
 const MessageContainer = styled.div`
    padding: 30px;
